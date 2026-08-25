@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block heading %}<h1>{{ submission.team_id }} {{ submission.team_name }}</h1>{% endblock %}
+{% block content %}
+<p><a href="/assignments/{{ assignment.assignment_id }}">Back to {{ assignment.assignment_id }}</a></p>
+<p class="{{ result.status or submission.current_status }}">
+  {{ result.status or submission.current_status or "No verification yet" }}
+  {% if result.event_codes %} · {{ describe_many(result.event_codes) }}{% endif %}
+</p>
+<section>
+  <h2>Submission</h2>
+  <p>Students: {{ submission.students }}</p>
+  <p>Classroom submission ID: {{ submission.classroom_submission_id }}</p>
+  <p>Official submission time: {{ submitted_display or submission.submitted_at or "—" }}</p>
+  <p>YouTube URL:
+    {% if submission.youtube_url %}<a href="{{ submission.youtube_url }}" target="_blank" rel="noreferrer">{{ submission.youtube_url }}</a>
+    {% else %}—{% endif %}
+  </p>
+  <p>
+    {% if submission.youtube_url %}<a href="{{ submission.youtube_url }}" target="_blank" rel="noreferrer">Open YouTube</a>{% endif %}
+    {% if submission.classroom_alternate_link %} · <a href="{{ submission.classroom_alternate_link }}" target="_blank" rel="noreferrer">Open Classroom</a>{% endif %}
+  </p>
+</section>
+<section>
+  <h2>Baseline</h2>
+  {% if baseline %}
+  <p>Baseline capture time: {{ baseline_display or baseline.baseline_captured_at }}</p>
+  <p>Complete: {{ baseline.baseline_complete }}</p>
+  <p>Video ID: {{ baseline.video_id }}</p>
+  <p>Channel ID: {{ baseline.channel_id }}</p>
+  <p>Published: {{ baseline.published_at }}</p>
+  <p>Duration: {{ baseline.duration }}</p>
+  <p>Privacy: {{ baseline.privacy_status }}</p>
+  <p>Title: {{ baseline.title }}</p>
+  {% else %}
+  <p>No baseline for this team.</p>
+  {% endif %}
+</section>
+<section>
+  <h2>Current</h2>
+  {% if result %}
+  <p>Verification time: {{ verified_display or result.verification_time }}</p>
+  <p>Video ID: {{ result.current_video_id }}</p>
+  <p>Channel ID: {{ result.current_channel_id }}</p>
+  <p>Duration: {{ result.current_duration }}</p>
+  <p>Privacy: {{ result.current_privacy_status }}</p>
+  <p>Title: {{ result.current_title }}</p>
+  {% else %}
+  <p>No verification snapshot yet.</p>
+  {% endif %}
+</section>
+<section>
+  <h2>Difference</h2>
+  <p>{{ result.notes or "No field-level notes. Status is derived from configured observable properties versus baseline." }}</p>
+  <p class="muted">Current artifact differs from baseline only if a configured field changed. Studio blur and audio replacement are not detected.</p>
+</section>
+<section>
+  <h2>Instructor resolution</h2>
+  <p class="muted">Local notes for the gradebook. This app does not write Classroom grades and does not determine misconduct.</p>
+  <form method="post" action="/assignments/{{ assignment.assignment_id }}/teams/{{ submission.team_id }}/resolution">
+    <label>Decision
+      <select name="decision">
+        {% set current = resolution.decision if resolution else "none" %}
+        {% for value in ["none", "ignore", "confirmed", "exception"] %}
+        <option value="{{ value }}" {% if current == value %}selected{% endif %}>{{ value }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Penalty points <input name="penalty_points" value="{{ resolution.penalty_points if resolution else "" }}"></label>
+    <label>Reason <textarea name="reason" rows="3">{{ resolution.reason if resolution else "" }}</textarea></label>
+    <label>Recorded by <input name="decided_by" value="{{ resolution.decided_by if resolution else "" }}"></label>
+    <button type="submit">Save resolution</button>
+  </form>
+</section>
+<section>
+  <h2>Audit trail</h2>
+  <ul>
+    {% for item in history %}
+    <li>{{ item.check.timestamp }} · {{ item.check.kind }} ·
+      {% if item.result %}<span class="{{ item.result.status }}">{{ item.result.status }}</span> {{ item.result.event_codes }}
+      {% else %}no team row{% endif %}
+    </li>
+    {% else %}
+    <li>No completed runs yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

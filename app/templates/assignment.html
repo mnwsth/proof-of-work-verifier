@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block heading %}<h1>{{ assignment.name }}</h1>{% endblock %}
+{% block content %}
+<p class="muted">{{ assignment.assignment_id }} · Classroom course {{ assignment.google_course_id or "—" }}</p>
+{% if imported %}
+<p class="banner">
+  Imported from Classroom. Fill <code>team_id</code> (and <code>team_name</code>) in
+  roster.csv, then Sync Classroom. Capture baseline about 15 minutes after the deadline.
+</p>
+{% endif %}
+<p class="banner">
+  GREEN: no configured change since baseline captured at
+  <strong>{{ baseline_display or "not yet captured" }}</strong>.
+  This is not proof that pixels or audio are unchanged.
+</p>
+<div class="cards">
+  <div class="card">Teams<strong>{{ table|length if not filter_status else counts.GREEN + counts.YELLOW + counts.RED + counts.ERROR }}</strong></div>
+  <div class="card">GREEN<strong class="GREEN">{{ counts.GREEN }}</strong></div>
+  <div class="card">YELLOW<strong class="YELLOW">{{ counts.YELLOW }}</strong></div>
+  <div class="card">RED<strong class="RED">{{ counts.RED }}</strong></div>
+  <div class="card">ERROR<strong class="ERROR">{{ counts.ERROR }}</strong></div>
+</div>
+<p>
+  Deadline: {{ deadline_display or "not set" }}<br>
+  Baseline captured: {{ baseline_display or "not yet" }}<br>
+  Last verification: {{ latest_display or "none" }}
+</p>
+<div class="actions">
+  <form class="inline" method="post" action="/assignments/{{ assignment.assignment_id }}/sync">
+    <button class="secondary" type="submit">Sync Classroom</button>
+  </form>
+  <form class="inline" method="post" action="/assignments/{{ assignment.assignment_id }}/baseline">
+    <button type="submit" {% if complete_baseline %}disabled{% endif %}>
+      {% if incomplete %}Complete incomplete baselines{% else %}Capture baseline{% endif %}
+    </button>
+  </form>
+  <form class="inline" method="post" action="/assignments/{{ assignment.assignment_id }}/verify">
+    <button type="submit" {% if not has_baseline %}disabled{% endif %}>Run verification</button>
+  </form>
+  <a class="button secondary" href="/assignments/{{ assignment.assignment_id }}/export">Export CSV</a>
+</div>
+<p>
+  Filter:
+  <a href="/assignments/{{ assignment.assignment_id }}">all</a> ·
+  <a href="/assignments/{{ assignment.assignment_id }}?status=RED">RED</a> ·
+  <a href="/assignments/{{ assignment.assignment_id }}?status=YELLOW">YELLOW</a> ·
+  <a href="/assignments/{{ assignment.assignment_id }}?status=GREEN">GREEN</a> ·
+  <a href="/assignments/{{ assignment.assignment_id }}?status=ERROR">ERROR</a>
+</p>
+<table>
+  <thead>
+    <tr>
+      <th>Team</th>
+      <th>Students</th>
+      <th>Submitted at</th>
+      <th>YouTube video</th>
+      <th>Status</th>
+      <th>Issue</th>
+      <th>Resolution</th>
+      <th>Last checked</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in table %}
+    <tr>
+      <td><a href="/assignments/{{ assignment.assignment_id }}/teams/{{ row.submission.team_id }}">{{ row.submission.team_id }}</a><br>
+        <span class="muted">{{ row.submission.team_name }}</span></td>
+      <td>{{ row.submission.students }}</td>
+      <td>{{ row.submission.submitted_at }}</td>
+      <td>
+        {% if row.submission.youtube_url %}
+        <a href="{{ row.submission.youtube_url }}" target="_blank" rel="noreferrer">Open</a>
+        {% else %}—{% endif %}
+      </td>
+      <td class="{{ row.status }}">{{ row.status or "—" }}</td>
+      <td>{{ row.issue or "—" }}</td>
+      <td>{{ row.resolution or "—" }}</td>
+      <td>{{ row.last_checked or "—" }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8">No submissions yet. Sync Classroom after filling roster.csv.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<section>
+  <h2>Previous verification runs</h2>
+  <p class="muted">Every run is kept. The latest completed verification is shown above; older runs remain inspectable.</p>
+  <ul>
+    {% for check in checks %}
+    <li>{{ check.timestamp }} · {{ check.kind }} · {{ check.status }}
+      {% if check.status == "completed" %}
+      · G{{ check.green }} Y{{ check.yellow }} R{{ check.red }} E{{ check.error }}
+      {% endif %}
+    </li>
+    {% else %}
+    <li>No runs yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

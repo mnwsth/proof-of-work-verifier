@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block heading %}<h1>Add assignment manually</h1>{% endblock %}
+{% block content %}
+<form method="post" action="/assignments/new">
+  <label>Assignment ID (filesystem-safe, e.g. DS07)
+    <input name="assignment_id" required pattern="[A-Za-z0-9][A-Za-z0-9._-]*">
+  </label>
+  <label>Name <input name="name" required></label>
+  <label>Google course ID <input name="google_course_id"></label>
+  <label>Google coursework ID <input name="google_coursework_id"></label>
+  <label>Deadline (ISO 8601, e.g. 2026-08-20T23:59:00+05:30)
+    <input name="deadline_at">
+  </label>
+  <label>Timezone <input name="timezone" value="Asia/Kolkata"></label>
+  <p><button type="submit">Create assignment folder</button></p>
+</form>
+<p class="muted">Use this only if the assignment is missing from Classroom. Prefer importing from a class on the home page. After creating, fill roster.csv with team_id values, then Sync Classroom. Capture baseline about 15 minutes after the deadline.</p>
+{% endblock %}

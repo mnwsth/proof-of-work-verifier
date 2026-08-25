@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="banner">
+  GREEN means no configured observable change since the post-deadline baseline.
+  It does not mean the video bytes are unchanged, and it does not mean nothing
+  changed between Turn in and the baseline. Studio blur and audio replacement
+  are not visible to this tool.
+</p>
+
+<section>
+  <h2>Your Classroom classes</h2>
+  {% if classroom_error %}
+  <p class="banner">{{ classroom_error }}</p>
+  {% endif %}
+  {% if courses %}
+  <table>
+    <thead>
+      <tr>
+        <th>Class</th>
+        <th>Section</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for course in courses %}
+      <tr>
+        <td>
+          <a href="/classroom/{{ course.id }}">{{ course.name or course.id }}</a>
+        </td>
+        <td class="muted">{{ course.section or "—" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="muted">Open a class to see published assignments whose due date is still in the future.</p>
+  {% elif authenticated %}
+  <p class="muted">No active classes found for this Google account.</p>
+  {% else %}
+  <p>Sign in with Google to see your active Classroom classes and upcoming assignments.</p>
+  {% endif %}
+</section>
+
+<section>
+  <h2>Imported assignments</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Assignment</th>
+        <th>Teams</th>
+        <th>Green</th>
+        <th>Yellow</th>
+        <th>Red</th>
+        <th>Error</th>
+        <th>Latest check</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><a href="/assignments/{{ row.assignment.assignment_id }}">{{ row.assignment.assignment_id }}</a><br>
+          <span class="muted">{{ row.assignment.name }}</span></td>
+        <td>{{ row.teams }}</td>
+        <td class="GREEN">{{ row.green }}</td>
+        <td class="YELLOW">{{ row.yellow }}</td>
+        <td class="RED">{{ row.red }}</td>
+        <td class="ERROR">{{ row.error }}</td>
+        <td>{{ row.latest_display or "—" }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7">None imported yet. Choose a class above, or <a href="/assignments/new">add one manually</a>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

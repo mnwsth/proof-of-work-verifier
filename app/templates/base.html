@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Proof-of-Work Verifier{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header>
+    <div>
+      <a href="/">Assignments</a>
+      {% block heading %}<h1>YouTube Proof-of-Work Integrity Verifier</h1>{% endblock %}
+    </div>
+    <nav>
+      {% if authenticated %}
+      Signed in · <a href="/login?force=1">Re-authorize Classroom</a>
+      {% else %}
+      <a href="/login">Sign in with Google</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

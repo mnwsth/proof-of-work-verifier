@@ -1,0 +1,23 @@
+timezone: Asia/Kolkata
+
+data_root: ./data/assignments
+
+api:
+  youtube_batch_size: 50
+  retry_attempts: 4
+  # Short delays so an on-demand dashboard run is usable.
+  # Increase these if you want the longer Classroom/YouTube backoff.
+  retry_delays_seconds: [0, 2, 5, 15]
+
+verification:
+  default_duration_change_severity: critical
+  default_title_change_severity: warning
+  default_description_change_severity: warning
+  duration_tolerance_seconds: 2
+  baseline_delay_after_deadline: PT15M
+  published_after_submission_grace_seconds: 300
+
+oauth:
+  client_secrets_file: ./credentials/client_secrets.json
+  token_file: ./credentials/token.json
+  youtube_api_key_file: ./credentials/youtube_api_key.txt

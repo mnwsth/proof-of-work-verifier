@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block heading %}<h1>{{ course.name or course_id }}</h1>{% endblock %}
+{% block content %}
+<p class="muted"><a href="/">All classes</a>{% if course.section %} · {{ course.section }}{% endif %}</p>
+{% if classroom_error %}
+<p class="banner">{{ classroom_error }}</p>
+{% endif %}
+<table>
+  <thead>
+    <tr>
+      <th>Assignment</th>
+      <th>Deadline ({{ timezone }})</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>{{ item.title }}</td>
+      <td>{{ item.deadline_display }}</td>
+      <td>
+        {% if item.imported_id %}
+        <a href="/assignments/{{ item.imported_id }}">Already imported as {{ item.imported_id }}</a>
+        {% else %}
+        <form method="post" action="/classroom/{{ course_id }}/coursework/{{ item.id }}/import">
+          <label>Local ID
+            <input name="assignment_id" value="{{ item.suggested_id }}" required pattern="[A-Za-z0-9][A-Za-z0-9._-]*">
+          </label>
+          <button type="submit">Import</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="3">No published assignments with a future due date.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="muted">After import, fill <code>team_id</code> in roster.csv, then Sync Classroom. Capture baseline about 15 minutes after the deadline.</p>
+{% endblock %}

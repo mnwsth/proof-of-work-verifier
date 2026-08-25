@@ -1,0 +1,68 @@
+:root {
+  --bg: #f4f1ea;
+  --ink: #1c1917;
+  --muted: #57534e;
+  --card: #fffcf7;
+  --line: #d6d3d1;
+  --green: #166534;
+  --yellow: #854d0e;
+  --red: #991b1b;
+  --error: #1e3a8a;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.45;
+}
+header, main { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
+header { display: flex; justify-content: space-between; align-items: baseline; }
+a { color: #1d4ed8; }
+.banner {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+.cards { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1rem 0; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  padding: 0.75rem 1rem;
+  min-width: 7rem;
+}
+.card strong { display: block; font-size: 1.4rem; }
+.actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin: 1rem 0; }
+button, .button {
+  font: inherit;
+  background: #1c1917;
+  color: white;
+  border: 0;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+button:disabled, .button.disabled { background: #a8a29e; cursor: not-allowed; }
+button.secondary, .button.secondary { background: #57534e; }
+table { width: 100%; border-collapse: collapse; background: var(--card); }
+th, td { text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.GREEN { color: var(--green); font-weight: 700; }
+.YELLOW { color: var(--yellow); font-weight: 700; }
+.RED { color: var(--red); font-weight: 700; }
+.ERROR { color: var(--error); font-weight: 700; }
+.muted { color: var(--muted); }
+form.inline { display: inline; }
+label { display: block; margin: 0.5rem 0 0.2rem; }
+input, select, textarea {
+  font: inherit;
+  width: 100%;
+  max-width: 32rem;
+  padding: 0.35rem;
+}
+td form { margin: 0; }
+td form input { max-width: 12rem; display: block; }
+td form button { margin-top: 0.35rem; }
+section { margin: 1.5rem 0; }

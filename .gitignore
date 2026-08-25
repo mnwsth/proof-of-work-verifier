@@ -1,0 +1,14 @@
+credentials/
+*.token.json
+.env
+.env.*
+__pycache__/
+.venv/
+venv/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+logs/
+data/assignments/
+*.egg-info/
+.DS_Store

@@ -20,9 +20,8 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
-from app.config import load_app_config
+from app.config import load_app_config, require_course_id
 
-COURSE_ID = "871535922934"
 SOURCE_COURSEWORK_IDS = ["875563743786", "874768201391"]
 
 WRITE_SCOPES = [
@@ -251,14 +250,14 @@ def create_form(forms) -> dict:
     return forms.forms().get(formId=form_id).execute()
 
 
-def load_source(classroom) -> dict:
+def load_source(classroom, course_id: str) -> dict:
     last_error = None
     for coursework_id in SOURCE_COURSEWORK_IDS:
         try:
             return (
                 classroom.courses()
                 .courseWork()
-                .get(courseId=COURSE_ID, id=coursework_id)
+                .get(courseId=course_id, id=coursework_id)
                 .execute()
             )
         except Exception as exc:
@@ -268,11 +267,12 @@ def load_source(classroom) -> dict:
 
 def main() -> int:
     config = load_app_config()
+    course_id = require_course_id(config)
     creds = load_write_credentials(config)
     classroom = build("classroom", "v1", credentials=creds, cache_discovery=False)
     forms = build("forms", "v1", credentials=creds, cache_discovery=False)
 
-    source = load_source(classroom)
+    source = load_source(classroom, course_id)
     student_ids = (source.get("individualStudentsOptions") or {}).get("studentIds") or []
     if not student_ids:
         raise SystemExit("Source assignment has no individual assignees.")
@@ -290,7 +290,7 @@ def main() -> int:
         classroom.courses()
         .courseWork()
         .create(
-            courseId=COURSE_ID,
+            courseId=course_id,
             body={
                 "title": ASSIGNMENT_TITLE,
                 "description": ASSIGNMENT_DESCRIPTION,

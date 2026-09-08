@@ -1,0 +1,10 @@
+# Copy to config.local.yaml and fill in. That file is gitignored.
+
+oauth:
+  allowed_spreadsheet_ids: []
+
+google:
+  classroom_course_id: ""
+  admin_folder_id: ""
+  reflections_folder_id: ""
+  reflections_topic_id: ""

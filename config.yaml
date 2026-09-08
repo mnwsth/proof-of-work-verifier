@@ -21,11 +21,6 @@ oauth:
   client_secrets_file: ./credentials/client_secrets.json
   token_file: ./credentials/token.json
   youtube_api_key_file: ./credentials/youtube_api_key.txt
-  allowed_spreadsheet_ids:
-    - 1Qb8e36GEZkRyM2evhvajZ6Eh-lUByG8nzl5YT1ChlXU
 
-google:
-  classroom_course_id: "871535922934"
-  admin_folder_id: 1RgychJTFhAFEHzla6Nwmeb0jDEOtf5_H
-  reflections_folder_id: "1tZnPuspmzRAWuEVa4FkYvnJ3zmQpMOgn"
-  reflections_topic_id: "872534450731"
+# Course, Drive folder, and spreadsheet IDs: copy config.local.yaml.example
+# to config.local.yaml (gitignored).

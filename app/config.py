@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field, field_validator
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = ROOT / "config.yaml"
+LOCAL_CONFIG_PATH = ROOT / "config.local.yaml"
 
 
 class ApiConfig(BaseModel):
@@ -35,8 +36,8 @@ class OAuthConfig(BaseModel):
 
 
 class GoogleConfig(BaseModel):
-    classroom_course_id: str = "871535922934"
-    admin_folder_id: str = "1RgychJTFhAFEHzla6Nwmeb0jDEOtf5_H"
+    classroom_course_id: str = ""
+    admin_folder_id: str = ""
     reflections_folder_id: str = ""
     reflections_topic_id: str = ""
 
@@ -120,9 +121,29 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return data
 
 
+def merge_dicts(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = merge_dicts(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def load_app_config(path: Path | None = None) -> AppConfig:
     config_path = path or DEFAULT_CONFIG_PATH
-    return AppConfig.model_validate(load_yaml(config_path))
+    data = load_yaml(config_path)
+    if path is None:
+        data = merge_dicts(data, load_yaml(LOCAL_CONFIG_PATH))
+    return AppConfig.model_validate(data)
+
+
+def require_course_id(config: AppConfig) -> str:
+    course_id = (config.google.classroom_course_id or "").strip()
+    if not course_id:
+        raise SystemExit("Set google.classroom_course_id in config.local.yaml")
+    return course_id
 
 
 def dump_yaml(path: Path, data: dict[str, Any]) -> None:

@@ -1,8 +1,15 @@
 # YouTube Proof-of-Work Integrity Verifier
 
-Instructor-side local app that compares YouTube proof-of-work videos against a class-wide baseline taken about 15 minutes after the assignment deadline. Later grading-time snapshots tell you whether configured, observable properties of the submitted YouTube video ID have changed since that baseline.
+Instructor tools for a hardware course that collects **unlisted YouTube proof-of-work videos** through Google Forms (linked from Google Classroom), then checks whether those videos still look the same after the deadline.
 
-This is a screening tool. It does not download videos, does not hash YouTube bytes, and does not determine academic misconduct.
+This repository is meant to be reused by another instructor offering the same kind of course. You bring your own Classroom class, Google Cloud project, and student domain. Nothing in git should contain your OAuth secrets, API keys, or course/Drive IDs.
+
+Two jobs:
+
+1. **Create** draft Classroom assignments and Google Forms for each POW (see [Creating POW assignments](docs/creating-pow-assignments.md)).
+2. **Verify** submitted YouTube URLs against a class-wide baseline (this README).
+
+The verifier is a screening tool. It does not download videos, does not hash YouTube bytes, and does not decide academic misconduct.
 
 ## What GREEN / YELLOW / RED / ERROR mean
 
@@ -11,9 +18,7 @@ This is a screening tool. It does not download videos, does not hash YouTube byt
 - **RED**: a material integrity issue to review (duration beyond tolerance, different video ID, video unavailable, channel change, unlisted → private).
 - **ERROR**: API/network/quota failure. Never treat this as a student integrity finding.
 
-YouTube Studio **blur** and **audio replacement** keep the same video ID and duration. The Data API cannot see those edits.
-
-Edits that were already processed **before** the official baseline become the baseline. Later checks will not flag them.
+YouTube Studio **blur** and **audio replacement** keep the same video ID and duration. The Data API cannot see those edits. Edits that finished processing **before** the official baseline become the baseline.
 
 ## Setup
 
@@ -23,52 +28,49 @@ Python 3.12+ recommended.
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+cp config.local.yaml.example config.local.yaml
 ```
 
-### Google API credentials (first run)
+Edit `config.local.yaml` with **your** Classroom course ID, Drive folder IDs (if you use them), and any spreadsheet IDs this machine may read or write. That file is gitignored. Committed `config.yaml` only has timezone, verifier defaults, and paths to credential files.
 
-Follow **[docs/google-api-credentials.md](docs/google-api-credentials.md)** once. In short:
+Set `timezone` in `config.yaml` to the zone you use for due dates (default `Asia/Kolkata`).
 
-1. Create a Google Cloud project and enable **Google Classroom API** and **YouTube Data API v3**.
+### Google API credentials (once)
+
+Follow **[docs/google-api-credentials.md](docs/google-api-credentials.md)**. In short:
+
+1. Create a Google Cloud project. Enable **Classroom**, **YouTube Data API v3**, **Google Forms**, and **Google Sheets**.
 2. Configure the OAuth consent screen (add yourself as a test user if the app is External).
-3. Create an OAuth client of type **Desktop app** and save it as `credentials/client_secrets.json`.
-4. Create a YouTube API key and save it as `credentials/youtube_api_key.txt` (one line, no quotes).
-5. Do not commit those files. `.gitignore` already excludes `credentials/`.
+3. Create an OAuth client of type **Desktop app** → `credentials/client_secrets.json`.
+4. Create a YouTube API key → `credentials/youtube_api_key.txt` (one line, no quotes).
+5. Do not commit `credentials/` or `config.local.yaml`.
 
-OAuth is instructor-only (courses, coursework, submissions, rosters, profile emails). Students never sign in. YouTube is observed with the API key; the app does not request YouTube write access.
+Students never sign in. The verifier does not write Classroom grades and does not request YouTube write access. Creating POW Forms/assignments needs extra OAuth scopes; the first create script will open a consent window.
 
-### First run
+### First run (verifier dashboard)
 
 ```bash
 python -m app
 ```
 
-Open http://127.0.0.1:8000 and click **Sign in with Google**. Use the instructor account that teaches the course. A refresh token is stored at `credentials/token.json`.
-
-You can also use:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-### Check a single YouTube URL
-
-```bash
-python scripts/check_youtube.py --url "https://www.youtube.com/watch?v=VIDEO_ID"
-```
-
-This prints observable metadata only. It does not download the video.
-
-### Discover Classroom IDs
+Open http://127.0.0.1:8000 and click **Sign in with Google** as a **teacher** on the course. A refresh token is stored at `credentials/token.json`.
 
 ```bash
 python scripts/discover_classroom.py
-python scripts/discover_classroom.py --course-id COURSE_ID
+python scripts/check_youtube.py --url "https://www.youtube.com/watch?v=VIDEO_ID"
 ```
 
-### Add an assignment
+## Creating POW assignments
 
-Sign in, then click a class on the home page. The app lists published Classroom assignments whose due date is still in the future. Import one to create the local folder and a draft roster. You can still add one by ID at `/assignments/new`, or:
+POW submissions go through a **Google Form** (team lead only, Unlisted YouTube URL + 11-character video ID). Classroom holds a **draft** assignment with the Form attached until you publish it.
+
+See **[docs/creating-pow-assignments.md](docs/creating-pow-assignments.md)** for the full workflow: shared student instructions, copying a create script, assignee lists, Form UI toggles, and rubric spreadsheets.
+
+Student-facing rules to hand out (also in `STUDENT_BRIEF.md`): Unlisted YouTube, at least 30 seconds, no Studio edits after the deadline, late policy applies to the **whole team**.
+
+## Add an assignment to the verifier
+
+Sign in, then click a class on the home page. Import a published Classroom assignment whose due date is still in the future, or:
 
 ```bash
 python scripts/create_assignment.py \
@@ -80,72 +82,43 @@ python scripts/create_assignment.py \
   --draft-roster
 ```
 
-Then edit `data/assignments/DS07/roster.csv` and fill `team_id` / `team_name` for every student. Unmapped students are flagged `UNMAPPED_STUDENT`. If teammates attach different videos, the team is flagged `TEAM_MULTIPLE_VIDEOS` and no canonical video is guessed.
-
-## Student assignment brief
-
-Give students these rules with the assignment (a copy is in `STUDENT_BRIEF.md`):
-
-- Upload as **unlisted** (not private, not public). Private videos are invisible to staff and to this verifier.
-- Do not open YouTube Studio Editor after the deadline (no trim, cut, blur, or audio replace).
-- Do not delete the video or change it to private.
-- The Classroom URL is expected to stay frozen; attaching a different video will be flagged.
-
-The app cannot enforce YouTube-side behavior.
+Then edit `data/assignments/DS07/roster.csv` and fill `team_id` / `team_name`. Unmapped students are `UNMAPPED_STUDENT`. If teammates attach different videos, the team is `TEAM_MULTIPLE_VIDEOS`.
 
 ## Baseline workflow
 
-1. Students submit YouTube URLs in Classroom.
-2. Prefer closing Classroom submissions after the due date (this freezes the URL, not the YouTube video).
+1. Team leads submit YouTube URLs in the Form (Classroom should point at that Form).
+2. Prefer closing the Form after the due date (this freezes new responses, not the YouTube video).
 3. About **15 minutes after the deadline**, press **Capture baseline** once.
-4. Videos still processing are stored as `baseline_incomplete`. Press Capture baseline again only to fill those duration fields once. That fill is not treated as tampering.
-5. A complete baseline is immutable. The app will not silently overwrite it.
+4. Videos still processing are `baseline_incomplete`. Capture again only to fill duration. That fill is not treated as tampering.
+5. A complete baseline is immutable.
 
 ## Verification workflow
 
-While grading, press **Run verification** as often as you like. Each press writes a new `data/assignments/<ID>/checks/<YYYYMMDD_HHMMSS>/` folder with `results.csv`, `metadata.json`, and raw YouTube JSON. Older runs are never overwritten.
+Press **Run verification** while grading. Each press writes `data/assignments/<ID>/checks/<YYYYMMDD_HHMMSS>/` (`results.csv`, `metadata.json`, raw YouTube JSON). Older runs are never overwritten.
 
-On a team page you can record a local resolution (`ignore` / `confirmed` / `exception`) and optional penalty points. Export CSV for the gradebook. This app does not write Google Classroom grades.
+Record a local resolution (`ignore` / `confirmed` / `exception`) and optional penalty. Export CSV for the gradebook. This app does not write Classroom grades.
 
 ## Coverage limits
 
-Detectable with high confidence after the baseline:
+Detectable with high confidence after the baseline: trim/cut (duration beyond 2 seconds), video unavailable, privacy unlisted → public or private, title/description/tags, a different video ID, submission reclaimed.
 
-- Trim/cut (duration change beyond 2 seconds)
-- Video unavailable (private and deleted look the same)
-- Privacy unlisted → public or private
-- Title / description / tags
-- Classroom attachment pointing at a different video ID
-- Submission reclaimed / unsubmitted
-
-Not detectable:
-
-- Studio blur
-- Studio audio replacement
-- Cards, end screens, captions, thumbnails as content edits
-- Anything that finished processing before the official baseline
+Not detectable: Studio blur, Studio audio replacement, cards/end screens/captions/thumbnails, anything that finished processing before the official baseline.
 
 ## Troubleshooting
 
 - **ERROR instead of RED**: quota, 5xx, or network. Rerun. Do not deduct points from ERROR.
-- **Video unavailable**: the API returned no items. The video may be private, deleted, or not yet visible. Do not call this “deleted” with certainty.
-- **Capture baseline disabled**: a complete baseline already exists.
-- **Run verification disabled**: capture a baseline first.
+- **Video unavailable**: private, deleted, or not yet visible. Do not call this “deleted” with certainty.
 - **OAuth errors**: delete `credentials/token.json` and sign in again. Never paste tokens into logs or chat. See [Google API credentials](docs/google-api-credentials.md#troubleshooting).
 
 Logs: `logs/verifier.log` (no access or refresh tokens).
 
 ## Backup / archiving
 
-Each assignment folder is self-contained:
-
 ```bash
 zip -r DS07_archive.zip data/assignments/DS07/
 ```
 
-That archive has configuration, roster, submissions, baseline, resolutions, every verification run, and raw snapshots. No database dump is required.
-
-Keep `data/assignments/` out of git if it contains student information. Configure `data_root` in `config.yaml` if you want the files stored elsewhere.
+Keep `data/assignments/` out of git if it contains student information. Set `data_root` in `config.yaml` to store files elsewhere.
 
 ## Tests
 

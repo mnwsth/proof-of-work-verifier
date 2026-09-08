@@ -21,3 +21,6 @@ oauth:
   client_secrets_file: ./credentials/client_secrets.json
   token_file: ./credentials/token.json
   youtube_api_key_file: ./credentials/youtube_api_key.txt
+
+# Course, Drive folder, and spreadsheet IDs: copy config.local.yaml.example
+# to config.local.yaml (gitignored).

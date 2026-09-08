@@ -6,10 +6,11 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = ROOT / "config.yaml"
+LOCAL_CONFIG_PATH = ROOT / "config.local.yaml"
 
 
 class ApiConfig(BaseModel):
@@ -31,6 +32,27 @@ class OAuthConfig(BaseModel):
     client_secrets_file: str = "./credentials/client_secrets.json"
     token_file: str = "./credentials/token.json"
     youtube_api_key_file: str = "./credentials/youtube_api_key.txt"
+    allowed_spreadsheet_ids: list[str] = Field(default_factory=list)
+
+
+class GoogleConfig(BaseModel):
+    classroom_course_id: str = ""
+    admin_folder_id: str = ""
+    reflections_folder_id: str = ""
+    reflections_topic_id: str = ""
+
+    @field_validator(
+        "classroom_course_id",
+        "admin_folder_id",
+        "reflections_folder_id",
+        "reflections_topic_id",
+        mode="before",
+    )
+    @classmethod
+    def ids_as_str(cls, value: object) -> str:
+        if value is None:
+            return ""
+        return str(value)
 
 
 class AppConfig(BaseModel):
@@ -39,6 +61,7 @@ class AppConfig(BaseModel):
     api: ApiConfig = Field(default_factory=ApiConfig)
     verification: VerificationDefaults = Field(default_factory=VerificationDefaults)
     oauth: OAuthConfig = Field(default_factory=OAuthConfig)
+    google: GoogleConfig = Field(default_factory=GoogleConfig)
 
     @property
     def data_root_path(self) -> Path:
@@ -98,9 +121,29 @@ def load_yaml(path: Path) -> dict[str, Any]:
     return data
 
 
+def merge_dicts(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
+    merged = dict(base)
+    for key, value in overlay.items():
+        if isinstance(value, dict) and isinstance(merged.get(key), dict):
+            merged[key] = merge_dicts(merged[key], value)
+        else:
+            merged[key] = value
+    return merged
+
+
 def load_app_config(path: Path | None = None) -> AppConfig:
     config_path = path or DEFAULT_CONFIG_PATH
-    return AppConfig.model_validate(load_yaml(config_path))
+    data = load_yaml(config_path)
+    if path is None:
+        data = merge_dicts(data, load_yaml(LOCAL_CONFIG_PATH))
+    return AppConfig.model_validate(data)
+
+
+def require_course_id(config: AppConfig) -> str:
+    course_id = (config.google.classroom_course_id or "").strip()
+    if not course_id:
+        raise SystemExit("Set google.classroom_course_id in config.local.yaml")
+    return course_id
 
 
 def dump_yaml(path: Path, data: dict[str, Any]) -> None:

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = ROOT / "config.yaml"
@@ -31,6 +31,27 @@ class OAuthConfig(BaseModel):
     client_secrets_file: str = "./credentials/client_secrets.json"
     token_file: str = "./credentials/token.json"
     youtube_api_key_file: str = "./credentials/youtube_api_key.txt"
+    allowed_spreadsheet_ids: list[str] = Field(default_factory=list)
+
+
+class GoogleConfig(BaseModel):
+    classroom_course_id: str = "871535922934"
+    admin_folder_id: str = "1RgychJTFhAFEHzla6Nwmeb0jDEOtf5_H"
+    reflections_folder_id: str = ""
+    reflections_topic_id: str = ""
+
+    @field_validator(
+        "classroom_course_id",
+        "admin_folder_id",
+        "reflections_folder_id",
+        "reflections_topic_id",
+        mode="before",
+    )
+    @classmethod
+    def ids_as_str(cls, value: object) -> str:
+        if value is None:
+            return ""
+        return str(value)
 
 
 class AppConfig(BaseModel):
@@ -39,6 +60,7 @@ class AppConfig(BaseModel):
     api: ApiConfig = Field(default_factory=ApiConfig)
     verification: VerificationDefaults = Field(default_factory=VerificationDefaults)
     oauth: OAuthConfig = Field(default_factory=OAuthConfig)
+    google: GoogleConfig = Field(default_factory=GoogleConfig)
 
     @property
     def data_root_path(self) -> Path:

@@ -31,6 +31,7 @@ WRITE_SCOPES = [
     "https://www.googleapis.com/auth/classroom.profile.emails",
     "https://www.googleapis.com/auth/forms.body",
     "https://www.googleapis.com/auth/drive.file",
+    "https://www.googleapis.com/auth/spreadsheets",
 ]
 
 FORM_TITLE = "[POW] Section 1.4 (AND Gate output)"
